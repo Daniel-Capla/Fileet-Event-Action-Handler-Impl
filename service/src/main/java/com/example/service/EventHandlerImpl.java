@@ -14,10 +14,13 @@ import com.filenet.api.property.PropertyFilter;
 import com.filenet.api.replication.Repository;
 import com.filenet.api.util.Id;
 
+import javax.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Iterator;
+import java.util.Locale;
 
 public class EventHandlerImpl implements EventActionHandler {
 
@@ -39,22 +42,21 @@ public class EventHandlerImpl implements EventActionHandler {
         //TODO Logic checks - add if else statement, count MD5 value and update document properties
 
         if (propertyMD5 == null) {
-
+            try {
+                getDocumentContentAndCountChecksum(documentInstance);
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            }
         }
 
     }
 
-    private String checksumMD5(MessageDigest messageDigest, String documentContent) {
-
-        MessageDigest md = MessageDigest.getInstance("MD5");
-
-        return null;
-    }
-
-    private String getDocumentContent(Document documentInstance) {
+    private String getDocumentContentAndCountChecksum(Document documentInstance) throws NoSuchAlgorithmException {
         ContentElementList documentContentList = documentInstance.get_ContentElements();
         Iterator iterator = documentContentList.iterator();
+        MessageDigest md = MessageDigest.getInstance("MD5");
         String readStr = "";
+        String checksumMD5 = "";
 
         while (iterator.hasNext()) {
             ContentTransfer ct = (ContentTransfer) iterator.next();
@@ -69,11 +71,14 @@ public class EventHandlerImpl implements EventActionHandler {
                     readStr = readStr + new String((buf));
                     buf = new byte[docLen];
                 }
+                md.update(Byte.parseByte(readStr));
+                byte[] digest = md.digest();
+                checksumMD5 = DatatypeConverter.printHexBinary(digest).toUpperCase(Locale.ROOT);
                 inputStream.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-        return readStr;
+        return checksumMD5;
     }
 }
