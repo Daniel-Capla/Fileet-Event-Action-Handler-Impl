@@ -21,15 +21,12 @@ public class EventHandlerImpl implements EventActionHandler {
 
     @Override
     public void onEvent(ObjectChangeEvent objectChangeEvent, Id id) throws EngineRuntimeException {
-
-
-        FilterElement filterElement = new FilterElement(null, null, null, "MD5", null);
-
         PropertyFilter pf = new PropertyFilter();
-        pf.addIncludeProperty(filterElement);
+        pf.addIncludeProperty(new FilterElement(null, null, null, "MD5", null));
 
+        Document documentInstance = Factory.Document.fetchInstance(textFileRepository, id, pf);
+        documentInstance.getProperties();
 
-        Document document = Factory.Document.fetchInstance(textFileRepository, id, null);
-        document.getProperties();
+        //TODO Logic checks - add if else statement, count MD5 value and update document properties
     }
 }
