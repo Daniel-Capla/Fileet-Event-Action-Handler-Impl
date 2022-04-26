@@ -11,7 +11,6 @@ import com.filenet.api.exception.EngineRuntimeException;
 import com.filenet.api.property.FilterElement;
 import com.filenet.api.property.Properties;
 import com.filenet.api.property.PropertyFilter;
-import com.filenet.api.replication.Repository;
 import com.filenet.api.util.Id;
 
 import javax.xml.bind.DatatypeConverter;
@@ -19,6 +18,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Locale;
 
@@ -38,23 +39,23 @@ public class EventHandlerImpl implements EventActionHandler {
         Document documentInstance = Factory.Document.fetchInstance(textFileRepository, id, pf);
         Properties propertyMD5 = documentInstance.getProperties();
 
-
         //TODO Logic checks - add if else statement, count MD5 value and update document properties
 
-        if (propertyMD5 == null) {
-            try {
-                getDocumentContentAndCountChecksum(documentInstance);
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            }
+        if (propertyMD5.get("MD5") == null) {
+            propertyMD5.putValue(getDocumentContentAndCountChecksum(documentInstance),id);
+            documentInstance.set_DateLastModified(Date.from(Instant.now()));
         }
-
     }
 
-    private String getDocumentContentAndCountChecksum(Document documentInstance) throws NoSuchAlgorithmException {
+    private String getDocumentContentAndCountChecksum(Document documentInstance) {
         ContentElementList documentContentList = documentInstance.get_ContentElements();
         Iterator iterator = documentContentList.iterator();
-        MessageDigest md = MessageDigest.getInstance("MD5");
+        MessageDigest md = null;
+        try {
+            md = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
         String readStr = "";
         String checksumMD5 = "";
 
