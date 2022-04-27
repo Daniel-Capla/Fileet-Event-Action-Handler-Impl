@@ -1,7 +1,6 @@
 package com.example.service;
 
 import com.example.db.repository.TextFileRepository;
-import com.filenet.api.admin.TraceLoggingConfiguration;
 import com.filenet.api.collection.ContentElementList;
 import com.filenet.api.constants.RefreshMode;
 import com.filenet.api.core.ContentTransfer;
