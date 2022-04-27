@@ -2,6 +2,7 @@ package com.example.service;
 
 import com.example.db.repository.TextFileRepository;
 import com.filenet.api.collection.ContentElementList;
+import com.filenet.api.constants.RefreshMode;
 import com.filenet.api.core.ContentTransfer;
 import com.filenet.api.core.Document;
 import com.filenet.api.core.Factory;
@@ -31,6 +32,9 @@ public class EventHandlerImpl implements EventActionHandler {
         this.textFileRepository = textFileRepository;
     }
 
+    //To avoid undermining the transactional consistency of the server, handler code must always throw some exception in response to an exception thrown
+    // by the Content Engine API. Throwing the exception ensures that the server rolls back the surrounding transaction and cleans up any inconsistent
+    // database activities. It is not safe to catch a Content Engine API exception and treat it as a soft or recoverable failure.
     @Override
     public void onEvent(ObjectChangeEvent objectChangeEvent, Id id) throws EngineRuntimeException {
         PropertyFilter pf = new PropertyFilter();
@@ -39,12 +43,14 @@ public class EventHandlerImpl implements EventActionHandler {
         Document documentInstance = Factory.Document.fetchInstance(textFileRepository, id, pf);
         Properties propertyMD5 = documentInstance.getProperties();
 
-        //TODO Logic checks - add if else statement, count MD5 value and update document properties
-
-        if (propertyMD5.get("MD5") == null) {
-            propertyMD5.putValue(getDocumentContentAndCountChecksum(documentInstance),id);
+        if (propertyMD5.get("MD5") == null || !propertyMD5.isPropertyPresent("MD5")) {
+            propertyMD5.putValue(getDocumentContentAndCountChecksum(documentInstance), id);
             documentInstance.set_DateLastModified(Date.from(Instant.now()));
+            //refresh only MD5, that's why we used property filter
+            documentInstance.save(RefreshMode.REFRESH, pf);
         }
+
+
     }
 
     private String getDocumentContentAndCountChecksum(Document documentInstance) {
